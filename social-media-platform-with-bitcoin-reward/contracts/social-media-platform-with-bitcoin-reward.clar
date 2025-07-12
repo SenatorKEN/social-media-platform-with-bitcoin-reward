@@ -305,3 +305,33 @@
     (ok true)
   )
 )
+
+;; Unfollow Mechanism
+(define-public (unfollow-user (target-user principal))
+  (let 
+    (
+      (sender-profile (unwrap! (map-get? user-profiles tx-sender) ERR-PROFILE-NOT-FOUND))
+      (target-profile (unwrap! (map-get? user-profiles target-user) ERR-PROFILE-NOT-FOUND))
+    )
+    ;; Check if following
+    (asserts! 
+      (is-some (map-get? user-followers {follower: tx-sender, followed: target-user})) 
+      ERR-NOT-FOLLOWING
+    )
+    
+    ;; Remove following relationship
+    (map-delete user-followers {follower: tx-sender, followed: target-user})
+    
+    ;; Update follower/following counts
+    (map-set user-profiles 
+      tx-sender 
+      (merge sender-profile {following: (- (get following sender-profile) u1)})
+    )
+    (map-set user-profiles 
+      target-user 
+      (merge target-profile {followers: (- (get followers target-profile) u1)})
+    )
+    
+    (ok true)
+  )
+)
